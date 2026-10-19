@@ -1,0 +1,19 @@
+selector_config:
+  enabled: true
+  bundle_path: scripts/umm_phase_CNN/predictions/dino_logreg/head.joblib
+  device: cuda
+  selector_batch_size: 128
+
+  strategy:
+    mode: threshold_then_topk
+    score_threshold: 0.7
+    fallback_topk: true
+
+  budget:
+    max_generate_multiplier: 3.0
+    early_stop: true
+
+  outputs:
+    save_all_candidates: true
+    write_scores_csv: true
+    viz_topk: 50

@@ -1,0 +1,8 @@
+content_model_config:
+  target: ldm.models.diffusion.contentDSALDMWrapper.ContentDSALDMWrapper
+  params:
+    ldm_config: "models/ldm/umm_dsa_f4/config.yaml"
+    ckpt_path: "models/ldm/umm_dsa_f4/best.ckpt"
+    default_steps: 200
+    default_eta: 0.0
+motion_shape: [8, 32, 32]

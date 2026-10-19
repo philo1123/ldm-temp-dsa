@@ -1,0 +1,111 @@
+model:
+  base_learning_rate: 5.0e-05
+  target: ldm.models.diffusion.motionLatentDiffusion.MotionLatentDiffusion
+  params:
+    linear_start: 0.0015
+    linear_end: 0.0195
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    first_stage_key: image
+    cond_stage_key: image
+    image_size: 64
+    channels: 3
+    cond_stage_trainable: false
+    motion_mode: flow_unet
+    conditioning_key: concat
+    monitor: val/loss_simple_ema
+    unet_config:
+      target: ldm.modules.diffusionmodules.openaimodel.TemporalUNetModel
+      params:
+        image_size: 64
+        in_channels: 11
+        out_channels: 8
+        model_channels: 160
+        attention_resolutions:
+        - 8
+        - 4
+        - 2
+        num_res_blocks: 1
+        channel_mult:
+        - 1
+        - 2
+        - 4
+        - 8
+        num_head_channels: 32
+        freeze_base_unet: false
+        num_frames: 8
+        motion_module_resolutions:
+        - 2
+        - 4
+        - 8
+        motion_module_config:
+          num_attention_heads: 8
+          num_transformer_block: 1
+          attention_block_types:
+          - Temporal_Self
+          - Temporal_Self
+          temporal_position_encoding: true
+          temporal_position_encoding_max_len: 10
+          temporal_attention_dim_div: 1
+          zero_initialize: true
+    first_stage_config:
+      target: ldm.models.autoencoder_CMHeads.AutoencoderKL_CMHeads
+      params:
+        monitor: val/rec_loss
+        embed_dim: 3
+        ckpt_path: models/first_stage_models/kl-f4-umm-Flow-pickFrame-ds2-residual/best.ckpt
+        freeze_backbone: false
+        content_head_kind: pickframe
+        pickframe_mode: choice
+        motion_head_kind: flow
+        motion_head_params:
+          flow:
+            code_dim: 8
+            ds_factor: 2
+            use_residual: true
+            flow_scale_alpha: 3.0
+            zero_init: true
+        ddconfig:
+          double_z: true
+          z_channels: 3
+          resolution: 256
+          in_channels: 1
+          out_ch: 1
+          ch: 128
+          ch_mult:
+          - 1
+          - 2
+          - 4
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+    cond_stage_config: __is_unconditional__
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 12
+    num_workers: 60
+    wrap: false
+    train:
+      target: ldm.data.ummdsa_series.UMMDSASeriesTrain
+      params:
+        metadata_path: data_vis/CNN_prediction_train_series_8_series_segment_artery_filtered.csv
+        size: 256
+        transform:
+          target: ldm.data.transform.create_transform_pipeline
+          params:
+            size: 256
+            augmentation_config: null
+    validation:
+      target: ldm.data.ummdsa_series.UMMDSASeriesValidation
+      params:
+        metadata_path: data_vis/CNN_prediction_val_series_8_series_segment_artery_filtered.csv
+        size: 256
+        transform:
+          target: ldm.data.transform.create_transform_pipeline
+          params:
+            size: 256
+            augmentation_config: null
